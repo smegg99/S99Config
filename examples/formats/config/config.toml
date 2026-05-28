@@ -1,0 +1,9 @@
+name = "toml"
+
+[private]
+env_value = "@{env:FORMAT_SECRET}"
+configured_value = "literal-toml-secret"
+
+[public]
+env_value = "@{pubenv:FORMAT_REGION}"
+data_path = "@{datadir:toml/output.txt}"

@@ -1,0 +1,7 @@
+name: yaml
+private:
+  env_value: "@{env:FORMAT_SECRET}"
+  configured_value: "literal-yaml-secret"
+public:
+  env_value: "@{pubenv:FORMAT_REGION}"
+  data_path: "@{datadir:yaml/output.txt}"

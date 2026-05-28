@@ -1,0 +1,2 @@
+service: dynamic-demo
+api_key: "@{env:DYNAMIC_API_KEY}"

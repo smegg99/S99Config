@@ -1,0 +1,2 @@
+service: billing
+api_key: configured-api-key

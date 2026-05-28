@@ -1,0 +1,11 @@
+app:
+  name: references-demo
+
+private_values:
+  from_env: "@{env:APP_TOKEN}"
+
+public_values:
+  from_env: "@{pubenv:APP_REGION}"
+  config_path: "@{cfgdir:config.yaml}"
+  data_path: "@{datadir:cache/result.json}"
+  optional_value: "@{pubenv?:APP_OPTIONAL}"
