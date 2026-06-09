@@ -195,9 +195,9 @@ Use `@secret()` for literal config values that must also be protected:
 dynamic use, `Map`, `RawMap`, and `Decode(&map[string]any{})` return secret
 handles for protected values.
 
-`PublicJSON` and `ExportPublicJSON` omit protected values. Derived strings
-that still contain a tracked secret are omitted too, but arbitrary transforms
-such as hashes or encodings cannot be inferred.
+`PublicJSON` and `ExportPublicJSON` omit protected values. Values derived from
+a secret are not detected automatically; mark the derived field `@secret()` if
+it must stay private.
 
 Custom redaction is available with `WithSecretFactory` and
 `NewPresentedSecret`. See [`examples/custom-redaction`](./examples/custom-redaction).

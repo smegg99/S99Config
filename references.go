@@ -183,16 +183,6 @@ func (p *privateTracker) hasValueUnder(prefix string) bool {
 	return false
 }
 
-// contains reports whether value contains a private string.
-func (p *privateTracker) contains(value string) bool {
-	for _, secret := range p.values {
-		if secret != "" && strings.Contains(value, secret) {
-			return true
-		}
-	}
-	return false
-}
-
 // redact replaces known private values in text.
 func (p *privateTracker) redact(value string) string {
 	secrets := make([]string, 0, len(p.values))

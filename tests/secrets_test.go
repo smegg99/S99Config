@@ -358,11 +358,13 @@ func TestEscapedPrivateValuesAreRedactedFromValidationErrors(t *testing.T) {
 	}
 }
 
-// TestPublicJSONHidesDerivedPrivateValues checks derived secret output.
-func TestPublicJSONHidesDerivedPrivateValues(t *testing.T) {
+// TestPublicJSONHidesExplicitlyMarkedDerivedFields checks that a value
+// computed from a secret is hidden when, and only when, it is marked
+// @secret(). Derived values are not detected automatically.
+func TestPublicJSONHidesExplicitlyMarkedDerivedFields(t *testing.T) {
 	t.Setenv("S99_TEST_TOKEN", "secret-that-must-not-leak")
 	loader, err := s99config.New(
-		[]byte(`#Config: {token: string, echoed: "prefix-\(token)"}`),
+		[]byte(`#Config: {token: string, echoed: ("prefix-\(token)") @secret()}`),
 		s99config.WithReferences(s99config.ReferenceOptions{}),
 	)
 	if err != nil {
@@ -387,7 +389,7 @@ func TestDefaultReferencesRecomputeDerivedSecretFields(t *testing.T) {
 	loader, err := s99config.New(
 		[]byte(`#Config: {
 			token:  (string | *"@{env:S99_DEFAULT_TOKEN}")
-			header: "Bearer \(token)"
+			header: ("Bearer \(token)") @secret()
 		}`),
 		s99config.WithReferences(s99config.ReferenceOptions{}),
 	)

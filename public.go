@@ -3,8 +3,7 @@ package s99config
 
 import "encoding/json"
 
-// PublicJSON returns configuration without sensitive fields or strings
-// containing a tracked sensitive value.
+// PublicJSON returns configuration without sensitive fields.
 func (l *Loader) PublicJSON() ([]byte, error) {
 	l.mu.RLock()
 	if l.public == nil {
@@ -58,7 +57,7 @@ func buildPublicValue(value any, path string, private *privateTracker) (any, boo
 		}
 		return output, true
 	case string:
-		return value, !private.contains(value)
+		return value, true
 	default:
 		return value, true
 	}

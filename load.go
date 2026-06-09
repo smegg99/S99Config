@@ -104,7 +104,6 @@ func (l *Loader) prepareLocked(name string, raw map[string]any) (loadedState, er
 	if err := l.markDeclaredSecrets(full, private); err != nil {
 		return loadedState{}, err
 	}
-	markDerivedSecrets(full, private)
 	public := buildPublicMap(full, "", private)
 	secrets := &secretStore{values: cloneStrings(private.values)}
 	return loadedState{

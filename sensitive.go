@@ -103,32 +103,3 @@ func lookupValue(input map[string]any, path string) (any, bool) {
 	}
 	return current, true
 }
-
-// markDerivedSecrets marks values containing known secrets.
-func markDerivedSecrets(input map[string]any, private *privateTracker) {
-	for key, value := range input {
-		markDerivedValue(value, joinPath("", key), private)
-	}
-}
-
-// markDerivedValue checks one value for derived secrets.
-func markDerivedValue(value any, path string, private *privateTracker) {
-	switch value := value.(type) {
-	case string:
-		if _, ok := private.value(path); !ok && private.contains(value) {
-			private.mark(path, value)
-		}
-	case map[string]any:
-		for key, item := range value {
-			markDerivedValue(item, joinPath(path, key), private)
-		}
-	case []any:
-		for i, item := range value {
-			itemPath := indexPath(path, i)
-			markDerivedValue(item, itemPath, private)
-			if private.hiddenPath(itemPath) {
-				private.hide(path)
-			}
-		}
-	}
-}
