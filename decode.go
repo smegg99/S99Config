@@ -49,33 +49,6 @@ func concealRawSecretValue(value any, path string, private *privateTracker, secr
 	}
 }
 
-// revealSecretMap converts secret handles to plaintext.
-func revealSecretMap(input map[string]any) map[string]any {
-	output := make(map[string]any, len(input))
-	for key, value := range input {
-		output[key] = revealSecretValue(value)
-	}
-	return output
-}
-
-// revealSecretValue converts one secret handle to plaintext.
-func revealSecretValue(value any) any {
-	switch value := value.(type) {
-	case Secret:
-		return value.Reveal()
-	case map[string]any:
-		return revealSecretMap(value)
-	case []any:
-		output := make([]any, len(value))
-		for i, item := range value {
-			output[i] = revealSecretValue(item)
-		}
-		return output
-	default:
-		return value
-	}
-}
-
 // handleSecretValue replaces one private value with a secret handle.
 func handleSecretValue(value any, path string, private *privateTracker, secrets *secretStore, factory SecretFactory) any {
 	if _, ok := private.value(path); ok {

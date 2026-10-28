@@ -330,3 +330,31 @@ func TestWriteDefaultsFollowsASymlink(t *testing.T) {
 		t.Fatalf("target was not written:\n%s", content)
 	}
 }
+
+// Patch merges into the file as it is now, so an edit made after Load survives.
+func TestPatchKeepsEditsMadeAfterLoad(t *testing.T) {
+	loader, err := s99config.New([]byte(`#Config: {name: string | *"app", port: int | *8080}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(t.TempDir(), "config.json")
+	if err := os.WriteFile(path, []byte(`{"name":"app"}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := loader.Load(path); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(`{"name":"edited by hand"}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := loader.Patch(map[string]any{"port": 9090}); err != nil {
+		t.Fatal(err)
+	}
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(content), "edited by hand") || !strings.Contains(string(content), "9090") {
+		t.Fatalf("patched file lost an edit or the patch:\n%s", content)
+	}
+}

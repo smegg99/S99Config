@@ -32,21 +32,28 @@ func (l *Loader) LoadWithParser(path string, parser koanf.Parser) error {
 	if err != nil {
 		return fmt.Errorf("resolve config path %s: %w", path, err)
 	}
-	config := koanf.New(".")
-	var raw map[string]any
-	if err := config.Load(file.Provider(path), parser, koanf.WithMergeFunc(func(src, _ map[string]any) error {
-		raw = src
-		return nil
-	})); err != nil {
-		return fmt.Errorf("load config %s: %w", path, err)
+	raw, err := readConfigFile(path, parser)
+	if err != nil {
+		return err
 	}
-
 	state, err := l.prepareLocked(absolutePath, raw)
 	if err != nil {
 		return err
 	}
 	l.applyLocked(absolutePath, parser, state)
 	return nil
+}
+
+// readConfigFile parses a config file without merging or resolving it.
+func readConfigFile(path string, parser koanf.Parser) (map[string]any, error) {
+	var raw map[string]any
+	if err := koanf.New(".").Load(file.Provider(path), parser, koanf.WithMergeFunc(func(src, _ map[string]any) error {
+		raw = src
+		return nil
+	})); err != nil {
+		return nil, fmt.Errorf("load config %s: %w", path, err)
+	}
+	return raw, nil
 }
 
 // LoadJSON validates JSON from memory. name is reported in errors and
