@@ -30,6 +30,27 @@ type resolver struct {
 	private *privateTracker
 }
 
+// asReference parses value when it is a reference string.
+func asReference(value any) (reference, bool) {
+	text, ok := value.(string)
+	if !ok {
+		return reference{}, false
+	}
+	return parseReference(text)
+}
+
+// resolveField resolves ref for path and records a private value it finds.
+func (r resolver) resolveField(ref reference, path string) (string, bool, error) {
+	resolved, found, err := r.resolve(ref)
+	if err != nil {
+		return "", false, err
+	}
+	if found && ref.isPrivate() {
+		r.private.mark(path, resolved)
+	}
+	return resolved, found, nil
+}
+
 // privateTracker records private paths and values.
 type privateTracker struct {
 	values map[string]string
@@ -95,6 +116,18 @@ func isReferenceSourceName(source string) bool {
 func (r resolver) resolveMap(input map[string]any, prefix string) error {
 	for key, value := range input {
 		path := joinPath(prefix, key)
+		if ref, ok := asReference(value); ok {
+			resolved, found, err := r.resolveField(ref, path)
+			if err != nil {
+				return fmt.Errorf("field %q: %w", path, err)
+			}
+			if found {
+				input[key] = resolved
+			} else {
+				delete(input, key)
+			}
+			continue
+		}
 		resolved, err := r.resolveValue(value, path)
 		if err != nil {
 			return fmt.Errorf("field %q: %w", path, err)
@@ -112,14 +145,8 @@ func (r resolver) resolveValue(value any, path string) (any, error) {
 		if !ok {
 			return value, nil
 		}
-		resolved, err := r.resolve(ref)
-		if err != nil {
-			return nil, err
-		}
-		if ref.isPrivate() {
-			r.private.mark(path, resolved)
-		}
-		return resolved, nil
+		resolved, _, err := r.resolveField(ref, path)
+		return resolved, err
 	case map[string]any:
 		return value, r.resolveMap(value, path)
 	case []any:

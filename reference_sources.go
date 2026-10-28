@@ -18,13 +18,13 @@ const (
 	srcDataDir = "datadir"
 )
 
-// resolve resolves a reference and handles optional misses.
-func (r resolver) resolve(ref reference) (string, error) {
-	value, err := r.resolveStrict(ref)
+// resolve resolves a reference; found is false for an optional reference that misses.
+func (r resolver) resolve(ref reference) (value string, found bool, err error) {
+	value, err = r.resolveStrict(ref)
 	if err != nil && ref.optional && errors.Is(err, errReferenceMissing) {
-		return "", nil
+		return "", false, nil
 	}
-	return value, err
+	return value, err == nil, err
 }
 
 // resolveStrict resolves a reference without optional handling.

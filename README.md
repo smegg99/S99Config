@@ -149,6 +149,10 @@ Add `?` after the source to allow missing values:
 region: "@{pubenv?:APP_REGION}"
 ```
 
+A missing optional value leaves the field unset, so the schema default applies.
+A required field without a default then fails validation, and a secret field
+gives a handle whose `IsSet` is false. Inside a list the item becomes `""`.
+
 Resolved values are treated as literal strings. If `APP_REGION` contains
 `@{env:OTHER}`, it stays that exact text.
 

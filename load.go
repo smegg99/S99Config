@@ -156,12 +156,9 @@ func resolveDefaultValues(value, raw any, rawExists bool, path string, steps []v
 		if !ok {
 			return false, nil
 		}
-		resolved, err := resolver.resolve(ref)
+		resolved, _, err := resolver.resolveField(ref, path)
 		if err != nil {
 			return false, fmt.Errorf("field %q: %w", path, err)
-		}
-		if ref.isPrivate() {
-			resolver.private.mark(path, resolved)
 		}
 		setValueAtPath(input, steps, resolved)
 		done[path] = struct{}{}

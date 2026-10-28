@@ -108,7 +108,7 @@ func TestDefaultPublicSourceValuesRemainLiteralWhenCopied(t *testing.T) {
 // TestOptionalReferenceOnlyIgnoresMissingValues checks optional ref behavior.
 func TestOptionalReferenceOnlyIgnoresMissingValues(t *testing.T) {
 	loader, err := s99config.New(
-		[]byte(`#Config: {value: string}`),
+		[]byte(`#Config: {value?: string}`),
 		s99config.WithReferences(s99config.ReferenceOptions{}),
 	)
 	if err != nil {
@@ -197,5 +197,44 @@ func TestKeyringReferencesAndHelpers(t *testing.T) {
 	}
 	if err := loader.DeleteKeyringValue("token"); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// A missing optional reference leaves the field to its schema default.
+func TestMissingOptionalReferenceUsesTheDefault(t *testing.T) {
+	loader, err := s99config.New(
+		[]byte(`#Config: {region: string | *"eu"}`),
+		s99config.WithReferences(s99config.ReferenceOptions{}),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := loader.LoadJSON("config.json", []byte(`{"region":"@{pubenv?:S99_MISSING_REGION}"}`)); err != nil {
+		t.Fatal(err)
+	}
+	resolved, err := loader.Map()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resolved["region"] != "eu" {
+		t.Fatalf("region = %#v, want the default %q", resolved["region"], "eu")
+	}
+}
+
+// A missing optional secret reference gives a handle that is not set.
+func TestMissingOptionalSecretIsNotSet(t *testing.T) {
+	loader, err := s99config.New(schema, s99config.WithReferences(s99config.ReferenceOptions{}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := loader.LoadJSON("config.json", []byte(`{"app":{"name":"demo"},"token":"@{env?:S99_MISSING_TOKEN}"}`)); err != nil {
+		t.Fatal(err)
+	}
+	var got Config
+	if err := loader.Decode(&got); err != nil {
+		t.Fatal(err)
+	}
+	if got.Token != nil && got.Token.IsSet() {
+		t.Fatalf("token is set to %q after a missing optional reference", got.Token.Reveal())
 	}
 }
