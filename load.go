@@ -82,6 +82,8 @@ func (l *Loader) prepareLocked(name string, raw map[string]any) (loadedState, er
 		if err := l.newResolver(name, private).resolveMap(input, ""); err != nil {
 			return loadedState{}, fmt.Errorf("resolve config references: %w", err)
 		}
+	} else if path, ok := firstReference(input, ""); ok {
+		return loadedState{}, fmt.Errorf("field %q: %w", path, errReferencesDisabled)
 	}
 	if err := l.markDeclaredSecrets(input, private); err != nil {
 		return loadedState{}, err

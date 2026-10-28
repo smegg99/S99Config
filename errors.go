@@ -16,6 +16,7 @@ var (
 	errNoParserAssociated              = errors.New("s99config: no parser associated with config file")
 	errReferenceMissing                = errors.New("s99config: referenced value is not available")
 	errSecretFieldMissing              = errors.New("s99config: no field receives sensitive value")
+	errReferencesDisabled              = errors.New("s99config: value is a reference but references are not enabled; use s99config.WithReferences")
 	errSecretFactoryNil                = errors.New("s99config: secret factory cannot be nil")
 	errSensitiveMapStringKeysRequired  = errors.New("s99config: sensitive values require string-keyed maps containing s99config.Secret or any values")
 )

@@ -30,6 +30,28 @@ type resolver struct {
 	private *privateTracker
 }
 
+// firstReference finds the path of a reference-shaped string in value.
+func firstReference(value any, path string) (string, bool) {
+	switch value := value.(type) {
+	case string:
+		_, ok := parseReference(value)
+		return path, ok
+	case map[string]any:
+		for key, item := range value {
+			if found, ok := firstReference(item, joinPath(path, key)); ok {
+				return found, true
+			}
+		}
+	case []any:
+		for i, item := range value {
+			if found, ok := firstReference(item, indexPath(path, i)); ok {
+				return found, true
+			}
+		}
+	}
+	return "", false
+}
+
 // asReference parses value when it is a reference string.
 func asReference(value any) (reference, bool) {
 	text, ok := value.(string)

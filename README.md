@@ -133,7 +133,8 @@ loader, err := s99config.NewFS(schemas, ".")
 
 ## References
 
-References are resolved only when `WithReferences` is enabled.
+References are resolved only when `WithReferences` is enabled. Without it, a
+config value shaped like a reference is a load error.
 
 | Reference | Reads from | Public JSON |
 | --- | --- | --- |

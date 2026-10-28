@@ -238,3 +238,18 @@ func TestMissingOptionalSecretIsNotSet(t *testing.T) {
 		t.Fatalf("token is set to %q after a missing optional reference", got.Token.Reveal())
 	}
 }
+
+// Without WithReferences a reference-shaped value is an error, not a silent literal.
+func TestReferenceShapedValueNeedsReferencesEnabled(t *testing.T) {
+	loader, err := s99config.New([]byte(`#Config: {value: string}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = loader.LoadJSON("config.json", []byte(`{"value":"@{env:S99_TOKEN}"}`))
+	if err == nil || !strings.Contains(err.Error(), "/value") {
+		t.Fatalf("LoadJSON error = %v, want one naming /value", err)
+	}
+	if err := loader.LoadJSON("config.json", []byte(`{"value":"@{env}"}`)); err != nil {
+		t.Fatalf("a malformed reference stays literal: %v", err)
+	}
+}
