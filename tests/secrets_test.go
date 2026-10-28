@@ -417,3 +417,39 @@ func TestDefaultReferencesRecomputeDerivedSecretFields(t *testing.T) {
 		t.Fatalf("public defaults = %s", public)
 	}
 }
+
+// A @secret field under a pattern constraint is private for every key.
+func TestSecretUnderPatternFieldIsPrivate(t *testing.T) {
+	loader, err := s99config.New([]byte(`#Config: {hosts: [string]: {token: string @secret()}}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := loader.LoadJSON("config.json", []byte(`{"hosts":{"ovh":{"token":"pattern-secret-value"}}}`)); err != nil {
+		t.Fatal(err)
+	}
+	public, err := loader.PublicJSON()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(public), "pattern-secret-value") {
+		t.Fatalf("public JSON shows a pattern-field secret: %s", public)
+	}
+}
+
+// A @secret list of strings keeps every item private.
+func TestSecretListItemsArePrivate(t *testing.T) {
+	loader, err := s99config.New([]byte(`#Config: {tokens: [...string] @secret()}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := loader.LoadJSON("config.json", []byte(`{"tokens":["first-list-secret","second-list-secret"]}`)); err != nil {
+		t.Fatal(err)
+	}
+	public, err := loader.PublicJSON()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(public), "list-secret") {
+		t.Fatalf("public JSON shows a list secret: %s", public)
+	}
+}
