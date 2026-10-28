@@ -11,9 +11,11 @@ import (
 
 // ReferenceOptions controls opt-in @{source:key} resolution. Values returned
 // by a source are treated as literal strings, not additional references.
+// DataDir defaults to ConfigDir and StateDir to DataDir.
 type ReferenceOptions struct {
 	ConfigDir      string
 	DataDir        string
+	StateDir       string
 	KeyringService string
 }
 
@@ -97,6 +99,9 @@ func (l *Loader) newResolver(configName string, private *privateTracker) resolve
 	}
 	if options.DataDir == "" {
 		options.DataDir = options.ConfigDir
+	}
+	if options.StateDir == "" {
+		options.StateDir = options.DataDir
 	}
 	return resolver{options: options, private: private}
 }

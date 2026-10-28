@@ -11,11 +11,12 @@ import (
 )
 
 const (
-	srcEnv     = "env"
-	srcKeyring = "keyring"
-	srcPubEnv  = "pubenv"
-	srcCfgDir  = "cfgdir"
-	srcDataDir = "datadir"
+	srcEnv      = "env"
+	srcKeyring  = "keyring"
+	srcPubEnv   = "pubenv"
+	srcCfgDir   = "cfgdir"
+	srcDataDir  = "datadir"
+	srcStateDir = "statedir"
 )
 
 // resolve resolves a reference; found is false for an optional reference that misses.
@@ -52,6 +53,8 @@ func (r resolver) resolveStrict(ref reference) (string, error) {
 		return joinReferencePath(r.options.ConfigDir, ref.key, srcCfgDir)
 	case srcDataDir:
 		return joinReferencePath(r.options.DataDir, ref.key, srcDataDir)
+	case srcStateDir:
+		return joinReferencePath(r.options.StateDir, ref.key, srcStateDir)
 	default:
 		return "", fmt.Errorf("unknown reference source %q", ref.source)
 	}

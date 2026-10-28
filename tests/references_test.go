@@ -253,3 +253,29 @@ func TestReferenceShapedValueNeedsReferencesEnabled(t *testing.T) {
 		t.Fatalf("a malformed reference stays literal: %v", err)
 	}
 }
+
+// @{statedir:...} joins StateDir, which defaults to DataDir.
+func TestStateDirReferences(t *testing.T) {
+	for _, tc := range []struct {
+		options s99config.ReferenceOptions
+		want    string
+	}{
+		{s99config.ReferenceOptions{DataDir: "/data", StateDir: "/state"}, filepath.Join("/state", "app.db")},
+		{s99config.ReferenceOptions{DataDir: "/data"}, filepath.Join("/data", "app.db")},
+	} {
+		loader, err := s99config.New([]byte(`#Config: {db: string}`), s99config.WithReferences(tc.options))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := loader.LoadJSON("config.json", []byte(`{"db":"@{statedir:app.db}"}`)); err != nil {
+			t.Fatal(err)
+		}
+		resolved, err := loader.Map()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if resolved["db"] != tc.want {
+			t.Fatalf("db = %#v, want %q", resolved["db"], tc.want)
+		}
+	}
+}

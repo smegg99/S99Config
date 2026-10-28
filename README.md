@@ -142,7 +142,8 @@ config value shaped like a reference is a load error.
 | `@{keyring:NAME}` | OS keyring | omitted |
 | `@{pubenv:NAME}` | Environment variable | included |
 | `@{cfgdir:path}` | Config file directory | included |
-| `@{datadir:path}` | `ReferenceOptions.DataDir` | included |
+| `@{datadir:path}` | `ReferenceOptions.DataDir`, else the config directory | included |
+| `@{statedir:path}` | `ReferenceOptions.StateDir`, else the data directory | included |
 
 Add `?` after the source to allow missing values:
 
