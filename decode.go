@@ -160,6 +160,9 @@ func injectSecretValue(target reflect.Value, source any, path string, private *p
 		for key, item := range source {
 			field, ok := jsonField(target, key)
 			if !ok {
+				if itemPath := joinPath(path, key); private.hasValueUnder(itemPath) {
+					return fmt.Errorf("%w: %q in %s", errSecretFieldMissing, itemPath, target.Type())
+				}
 				continue
 			}
 			if err := injectSecretValue(field, item, joinPath(path, key), private, secrets, factory); err != nil {

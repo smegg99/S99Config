@@ -195,7 +195,8 @@ Use `@secret()` for literal config values that must also be protected:
 }
 ```
 
-`Decode` refuses to put a protected value into a plain `string` field. For
+`Decode` refuses to put a protected value into a plain `string` field, and
+returns an error when the struct has no field for one. For
 dynamic use, `Map`, `RawMap`, and `Decode(&map[string]any{})` return secret
 handles for protected values.
 

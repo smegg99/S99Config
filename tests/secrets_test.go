@@ -453,3 +453,21 @@ func TestSecretListItemsArePrivate(t *testing.T) {
 		t.Fatalf("public JSON shows a list secret: %s", public)
 	}
 }
+
+// Decode refuses a struct that has no field for a loaded secret instead of dropping it.
+func TestDecodeRefusesAStructMissingASecretField(t *testing.T) {
+	loader, err := s99config.New([]byte(`#Config: {app: {name: string}, token?: string @secret()}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := loader.LoadJSON("config.json", []byte(`{"app":{"name":"demo"},"token":"literal-secret"}`)); err != nil {
+		t.Fatal(err)
+	}
+	var got struct {
+		Tokn s99config.Secret `json:"tokn"`
+	}
+	err = loader.Decode(&got)
+	if err == nil || !strings.Contains(err.Error(), "/token") {
+		t.Fatalf("Decode error = %v, want one naming /token", err)
+	}
+}
