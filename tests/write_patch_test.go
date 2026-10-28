@@ -293,3 +293,40 @@ func TestWriteDefaultsCreatesPrivateDirectories(t *testing.T) {
 		t.Fatalf("new config directory = %#o, want %#o", got, os.FileMode(0o700))
 	}
 }
+
+// A config file linked from a dotfiles checkout stays a link; the target gets the new content.
+func TestWriteDefaultsFollowsASymlink(t *testing.T) {
+	loader, err := s99config.New([]byte(`#Config: {app: {name: string | *"generated"}}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	target := filepath.Join(dir, "dotfiles", "config.json")
+	if err := os.MkdirAll(filepath.Dir(target), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(target, []byte("{}\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	link := filepath.Join(dir, "config.json")
+	if err := os.Symlink(target, link); err != nil {
+		t.Fatal(err)
+	}
+	if err := loader.WriteDefaults(link); err != nil {
+		t.Fatal(err)
+	}
+	info, err := os.Lstat(link)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode()&os.ModeSymlink == 0 {
+		t.Fatal("the symlink was replaced by a regular file")
+	}
+	content, err := os.ReadFile(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(content), "generated") {
+		t.Fatalf("target was not written:\n%s", content)
+	}
+}

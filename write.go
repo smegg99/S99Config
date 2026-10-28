@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -88,8 +89,11 @@ func nativeNumberValue(value any) (any, error) {
 	}
 }
 
-// writeBytesAtomic replaces a file through a temp file.
+// writeBytesAtomic replaces a file through a synced temp file, writing through a symlink to its target.
 func writeBytesAtomic(path string, data []byte, defaultMode os.FileMode) error {
+	if resolved, err := filepath.EvalSymlinks(path); err == nil {
+		path = resolved
+	}
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return fmt.Errorf("create directory %s: %w", dir, err)
@@ -115,11 +119,31 @@ func writeBytesAtomic(path string, data []byte, defaultMode os.FileMode) error {
 		file.Close()
 		return fmt.Errorf("write temporary file: %w", err)
 	}
+	if err := file.Sync(); err != nil {
+		file.Close()
+		return fmt.Errorf("sync temporary file: %w", err)
+	}
 	if err := file.Close(); err != nil {
 		return fmt.Errorf("close temporary file: %w", err)
 	}
 	if err := os.Rename(tempPath, path); err != nil {
 		return fmt.Errorf("replace %s: %w", path, err)
+	}
+	return syncDir(dir)
+}
+
+// syncDir makes a rename inside dir durable; Windows cannot sync a directory handle.
+func syncDir(dir string) error {
+	if runtime.GOOS == "windows" {
+		return nil
+	}
+	handle, err := os.Open(dir)
+	if err != nil {
+		return fmt.Errorf("open directory %s: %w", dir, err)
+	}
+	defer handle.Close()
+	if err := handle.Sync(); err != nil {
+		return fmt.Errorf("sync directory %s: %w", dir, err)
 	}
 	return nil
 }
