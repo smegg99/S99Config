@@ -255,3 +255,41 @@ func TestWriteDefaultsCreatesPrivateFilePermissions(t *testing.T) {
 		t.Fatalf("default config permissions = %#o, want %#o", got, os.FileMode(0o600))
 	}
 }
+
+// A config file is read and edited by people, so JSON is written one field per line.
+func TestWriteDefaultsIndentsJSON(t *testing.T) {
+	loader, err := s99config.New([]byte(`#Config: {app: {name: string | *"generated", port: int | *8080}}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(t.TempDir(), "config.json")
+	if err := loader.WriteDefaults(path); err != nil {
+		t.Fatal(err)
+	}
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(content), "\n  \"app\": {\n    \"name\": \"generated\",") {
+		t.Fatalf("JSON is not indented:\n%s", content)
+	}
+}
+
+// The directory holds secrets too, so a new one is private to the user.
+func TestWriteDefaultsCreatesPrivateDirectories(t *testing.T) {
+	loader, err := s99config.New([]byte(`#Config: {token: string | *"literal-secret" @secret()}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := filepath.Join(t.TempDir(), "app")
+	if err := loader.WriteDefaults(filepath.Join(dir, "config.json")); err != nil {
+		t.Fatal(err)
+	}
+	info, err := os.Stat(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := info.Mode().Perm(); got != 0o700 {
+		t.Fatalf("new config directory = %#o, want %#o", got, os.FileMode(0o700))
+	}
+}

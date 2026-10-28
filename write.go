@@ -91,7 +91,7 @@ func nativeNumberValue(value any) (any, error) {
 // writeBytesAtomic replaces a file through a temp file.
 func writeBytesAtomic(path string, data []byte, defaultMode os.FileMode) error {
 	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return fmt.Errorf("create directory %s: %w", dir, err)
 	}
 

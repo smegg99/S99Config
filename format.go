@@ -34,7 +34,11 @@ func (jsonParser) Unmarshal(data []byte) (map[string]any, error) {
 	return decodeObject(data)
 }
 
-// Marshal encodes a JSON object.
+// Marshal encodes a JSON object with two-space indentation and a final newline.
 func (jsonParser) Marshal(config map[string]any) ([]byte, error) {
-	return stdjson.Marshal(config)
+	data, err := stdjson.MarshalIndent(config, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+	return append(data, '\n'), nil
 }
