@@ -131,6 +131,34 @@ var schemas embed.FS
 loader, err := s99config.NewFS(schemas, ".")
 ```
 
+## User directories and first run
+
+`UserDirs(app)` returns the app's config, data and state directories:
+`$XDG_CONFIG_HOME`, `$XDG_DATA_HOME` and `$XDG_STATE_HOME` (or their
+`~/.config`, `~/.local/share` and `~/.local/state` defaults) on Linux, Roaming
+and Local AppData on Windows, and Application Support on macOS.
+
+`LoadOrCreate(path)` writes the schema defaults when the file does not exist,
+then loads it:
+
+```go
+dirs, err := s99config.UserDirs("myapp")
+if err != nil {
+	log.Fatal(err)
+}
+loader, err := s99config.New(schema, s99config.WithReferences(s99config.ReferenceOptions{
+	ConfigDir: dirs.Config,
+	DataDir:   dirs.Data,
+	StateDir:  dirs.State,
+}))
+if err != nil {
+	log.Fatal(err)
+}
+if err := loader.LoadOrCreate(filepath.Join(dirs.Config, "config.json")); err != nil {
+	log.Fatal(err)
+}
+```
+
 ## References
 
 References are resolved only when `WithReferences` is enabled. Without it, a

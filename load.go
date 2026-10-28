@@ -2,7 +2,10 @@
 package s99config
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
+	"os"
 	"path/filepath"
 
 	"github.com/knadh/koanf/providers/file"
@@ -17,6 +20,16 @@ func (l *Loader) Load(path string) error {
 		return err
 	}
 	return l.LoadWithParser(path, parser)
+}
+
+// LoadOrCreate writes the defaults to path when no file exists there, then loads it.
+func (l *Loader) LoadOrCreate(path string) error {
+	if _, err := os.Stat(path); errors.Is(err, fs.ErrNotExist) {
+		if err := l.WriteDefaults(path); err != nil {
+			return err
+		}
+	}
+	return l.Load(path)
 }
 
 // LoadWithParser reads configuration using a custom Koanf parser.
