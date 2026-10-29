@@ -15,18 +15,6 @@ func (l *Loader) PublicJSON() ([]byte, error) {
 	return json.Marshal(public)
 }
 
-// ExportPublicJSON writes indented configuration without sensitive values.
-func (l *Loader) ExportPublicJSON(path string) error {
-	l.mu.RLock()
-	if l.public == nil {
-		l.mu.RUnlock()
-		return ErrNotLoaded
-	}
-	public := cloneMap(l.public)
-	l.mu.RUnlock()
-	return writeJSONFile(path, public)
-}
-
 // buildPublicMap copies only public configuration values.
 func buildPublicMap(input map[string]any, prefix string, private *privateTracker) map[string]any {
 	output := make(map[string]any, len(input))

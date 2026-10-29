@@ -57,18 +57,6 @@ func (l *Loader) Map() (map[string]any, error) {
 	return handleSecretMap(l.resolved, l.private, l.secrets, l.secretFactory), nil
 }
 
-// RawMap returns a copy of the original configuration object before defaults
-// and reference resolution, replacing loaded sensitive values with configured
-// Secret implementations.
-func (l *Loader) RawMap() (map[string]any, error) {
-	l.mu.RLock()
-	defer l.mu.RUnlock()
-	if l.raw == nil {
-		return nil, ErrNotLoaded
-	}
-	return handleSecretMap(l.raw, l.private, l.secrets, l.secretFactory), nil
-}
-
 // decodeObject decodes one JSON object.
 func decodeObject(data []byte) (map[string]any, error) {
 	var result map[string]any

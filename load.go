@@ -19,7 +19,7 @@ func (l *Loader) Load(path string) error {
 	if err != nil {
 		return err
 	}
-	return l.LoadWithParser(path, parser)
+	return l.loadWithParser(path, parser)
 }
 
 // LoadOrCreate writes the defaults to path when no file exists there, then loads it.
@@ -32,8 +32,8 @@ func (l *Loader) LoadOrCreate(path string) error {
 	return l.Load(path)
 }
 
-// LoadWithParser reads configuration using a custom Koanf parser.
-func (l *Loader) LoadWithParser(path string, parser koanf.Parser) error {
+// loadWithParser reads configuration using a custom Koanf parser.
+func (l *Loader) loadWithParser(path string, parser koanf.Parser) error {
 	if parser == nil {
 		return fmt.Errorf("load config %s: parser cannot be nil", path)
 	}

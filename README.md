@@ -189,21 +189,8 @@ Resolved values are treated as literal strings. If `APP_REGION` contains
 Keyring references require `ReferenceOptions.KeyringService`. They use
 `go-keyring`, which maps to Keychain on macOS, Credential Manager on Windows,
 and Secret Service backends such as GNOME Keyring or KWallet on Linux. Headless
-Linux, containers, and CI often have no unlocked keyring backend.
-
-```go
-loader, err := s99config.New(
-	schema,
-	s99config.WithReferences(s99config.ReferenceOptions{
-		KeyringService: "my-application",
-	}),
-)
-
-_ = loader.SetKeyringValue("api-token", "secret")
-value, err := loader.GetKeyringValue("api-token")
-_ = value
-_ = loader.DeleteKeyringValue("api-token")
-```
+Linux, containers, and CI often have no unlocked keyring backend. The app
+stores and removes keyring values with `go-keyring` itself.
 
 ## Secrets
 
@@ -227,10 +214,10 @@ Use `@secret()` for literal config values that must also be protected:
 
 `Decode` refuses to put a protected value into a plain `string` field, and
 returns an error when the struct has no field for one. For
-dynamic use, `Map`, `RawMap`, and `Decode(&map[string]any{})` return secret
+dynamic use, `Map` and `Decode(&map[string]any{})` return secret
 handles for protected values.
 
-`PublicJSON` and `ExportPublicJSON` omit protected values. Values derived from
+`PublicJSON` omits protected values. Values derived from
 a secret are not detected automatically; mark the derived field `@secret()` if
 it must stay private.
 
@@ -244,7 +231,6 @@ defaults, err := loader.DefaultsJSON()
 err = loader.WriteDefaults("config.yaml")
 err = loader.Patch(map[string]any{"server": map[string]any{"port": 9090}})
 public, err := loader.PublicJSON()
-err = loader.ExportPublicJSON("public-config.json")
 ```
 
 `WriteDefaults` requires defaults for all required fields and creates new files

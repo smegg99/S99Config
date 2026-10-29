@@ -58,15 +58,8 @@ func TestSecretHandlesRedactDecodedAndMapValues(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	raw, err := loader.RawMap()
-	if err != nil {
-		t.Fatal(err)
-	}
-	for name, view := range map[string]map[string]any{"Map": resolved, "RawMap": raw} {
-		secret, ok := view["token"].(s99config.Secret)
-		if !ok || secret.Reveal() != "do-not-log-this" {
-			t.Fatalf("%s token is not a secret handle: %#v", name, view["token"])
-		}
+	if secret, ok := resolved["token"].(s99config.Secret); !ok || secret.Reveal() != "do-not-log-this" {
+		t.Fatalf("Map token is not a secret handle: %#v", resolved["token"])
 	}
 	var generic map[string]any
 	if err := loader.Decode(&generic); err != nil {

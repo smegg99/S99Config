@@ -43,11 +43,11 @@ func (l *Loader) WriteDefaults(path string) error {
 	if err != nil {
 		return err
 	}
-	return l.WriteDefaultsWithParser(path, parser)
+	return l.writeDefaultsWithParser(path, parser)
 }
 
-// WriteDefaultsWithParser writes defaults using parser.
-func (l *Loader) WriteDefaultsWithParser(path string, parser koanf.Parser) error {
+// writeDefaultsWithParser writes defaults using parser.
+func (l *Loader) writeDefaultsWithParser(path string, parser koanf.Parser) error {
 	data, err := l.DefaultsJSON()
 	if err != nil {
 		return err

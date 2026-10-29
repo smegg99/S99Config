@@ -168,8 +168,8 @@ func TestMalformedReferenceLikeValuesRemainLiteral(t *testing.T) {
 	}
 }
 
-// TestKeyringReferencesAndHelpers checks keyring refs and helper methods.
-func TestKeyringReferencesAndHelpers(t *testing.T) {
+// TestKeyringReferencesStayPrivate checks a keyring reference resolves and stays out of public JSON.
+func TestKeyringReferencesStayPrivate(t *testing.T) {
 	keyring.MockInit()
 	loader, err := s99config.New(
 		schema,
@@ -178,12 +178,8 @@ func TestKeyringReferencesAndHelpers(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := loader.SetKeyringValue("token", "keyring-secret"); err != nil {
+	if err := keyring.Set("s99config-tests", "token", "keyring-secret"); err != nil {
 		t.Fatal(err)
-	}
-	value, err := loader.GetKeyringValue("token")
-	if err != nil || value != "keyring-secret" {
-		t.Fatalf("keyring token = %q, %v", value, err)
 	}
 	if err := loader.LoadJSON("config.json", []byte(`{"app":{"name":"demo"},"token":"@{keyring:token}"}`)); err != nil {
 		t.Fatal(err)
@@ -194,9 +190,6 @@ func TestKeyringReferencesAndHelpers(t *testing.T) {
 	}
 	if strings.Contains(string(public), "keyring-secret") || strings.Contains(string(public), "token") {
 		t.Fatalf("public config exposes keyring token: %s", public)
-	}
-	if err := loader.DeleteKeyringValue("token"); err != nil {
-		t.Fatal(err)
 	}
 }
 

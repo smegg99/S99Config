@@ -92,20 +92,12 @@ func TestDefinitionViewsAndPublicExport(t *testing.T) {
 	if loader.ConfigPath() == "" {
 		t.Fatal("ConfigPath is empty")
 	}
-	raw, err := loader.RawMap()
-	if err != nil || len(raw) != 0 {
-		t.Fatalf("raw = %#v, %v", raw, err)
-	}
 	resolved, err := loader.Map()
 	if err != nil || resolved["name"] != "demo" {
 		t.Fatalf("resolved = %#v, %v", resolved, err)
 	}
-	publicPath := filepath.Join(t.TempDir(), "public.json")
-	if err := loader.ExportPublicJSON(publicPath); err != nil {
-		t.Fatal(err)
-	}
-	content, err := os.ReadFile(publicPath)
-	if err != nil || !strings.Contains(string(content), `"name": "demo"`) {
-		t.Fatalf("public export = %s, %v", content, err)
+	public, err := loader.PublicJSON()
+	if err != nil || !strings.Contains(string(public), `"name":"demo"`) {
+		t.Fatalf("public = %s, %v", public, err)
 	}
 }
