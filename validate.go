@@ -1,4 +1,5 @@
 // validate.go
+
 package s99config
 
 import (

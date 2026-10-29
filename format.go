@@ -1,4 +1,5 @@
 // format.go
+
 package s99config
 
 import (

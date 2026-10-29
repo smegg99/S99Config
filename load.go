@@ -1,4 +1,5 @@
 // load.go
+
 package s99config
 
 import (
@@ -107,7 +108,8 @@ func (l *Loader) prepareLocked(name string, raw map[string]any) (loadedState, er
 	if l.references != nil {
 		resolvedDefaults := make(map[string]struct{})
 		for {
-			changed, err := l.resolveDefaultsLocked(name, raw, input, full, private, resolvedDefaults)
+			// Existence is read from input, where a missed optional reference was already removed.
+			changed, err := l.resolveDefaultsLocked(name, input, input, full, private, resolvedDefaults)
 			if err != nil {
 				return loadedState{}, fmt.Errorf("resolve default references: %w", err)
 			}
@@ -121,11 +123,16 @@ func (l *Loader) prepareLocked(name string, raw map[string]any) (loadedState, er
 		}
 	}
 
+	if unsetMissed(input, full, private) {
+		if full, err = l.validateLocked(name, input, private); err != nil {
+			return loadedState{}, err
+		}
+	}
 	if err := l.markDeclaredSecrets(full, private); err != nil {
 		return loadedState{}, err
 	}
 	public := buildPublicMap(full, "", private)
-	secrets := &secretStore{values: cloneStrings(private.values)}
+	secrets := &secretStore{values: private.setValues()}
 	return loadedState{
 		raw:      concealRawSecretMap(raw, private, secrets, l.secretFactory),
 		resolved: handleSecretMap(full, private, secrets, l.secretFactory),
@@ -133,6 +140,36 @@ func (l *Loader) prepareLocked(name string, raw map[string]any) (loadedState, er
 		private:  private.pathsOnly(),
 		secrets:  secrets,
 	}, nil
+}
+
+// unsetMissed turns each missed private field no default filled into an unset secret, reporting whether input changed.
+func unsetMissed(input, full map[string]any, private *privateTracker) bool {
+	changed := false
+	for path := range private.missed {
+		if _, ok := lookupValue(full, path); ok {
+			continue
+		}
+		keys, ok := objectPathKeys(path)
+		if !ok || len(keys) == 0 {
+			continue
+		}
+		parent := input
+		for _, key := range keys[:len(keys)-1] {
+			next, ok := parent[key].(map[string]any)
+			if !ok {
+				parent = nil
+				break
+			}
+			parent = next
+		}
+		if parent == nil {
+			continue
+		}
+		parent[keys[len(keys)-1]] = ""
+		private.markUnset(path)
+		changed = true
+	}
+	return changed
 }
 
 // applyLocked stores prepared config state.
@@ -176,7 +213,7 @@ func resolveDefaultValues(value, raw any, rawExists bool, path string, steps []v
 		if !ok {
 			return false, nil
 		}
-		resolved, _, err := resolver.resolveField(ref, path)
+		resolved, err := resolver.resolveInPlace(ref, path)
 		if err != nil {
 			return false, fmt.Errorf("field %q: %w", path, err)
 		}

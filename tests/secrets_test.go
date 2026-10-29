@@ -1,4 +1,5 @@
 // tests/secrets_test.go
+
 package tests
 
 import (
@@ -461,5 +462,27 @@ func TestDecodeRefusesAStructMissingASecretField(t *testing.T) {
 	err = loader.Decode(&got)
 	if err == nil || !strings.Contains(err.Error(), "/token") {
 		t.Fatalf("Decode error = %v, want one naming /token", err)
+	}
+}
+
+// Decode finds a secret's field the way encoding/json does: untagged names match case-insensitively, embedded fields promote.
+func TestDecodeFindsSecretFieldsLikeEncodingJSON(t *testing.T) {
+	loader, err := s99config.New([]byte(`#Config: {token: string @secret()}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := loader.LoadJSON("config.json", []byte(`{"token":"literal-secret"}`)); err != nil {
+		t.Fatal(err)
+	}
+	var untagged struct{ Token s99config.Secret }
+	if err := loader.Decode(&untagged); err != nil || untagged.Token == nil || untagged.Token.Reveal() != "literal-secret" {
+		t.Fatalf("untagged: %v %#v", err, untagged.Token)
+	}
+	type Base struct {
+		Token s99config.Secret `json:"token"`
+	}
+	var embedded struct{ Base }
+	if err := loader.Decode(&embedded); err != nil || embedded.Token == nil || embedded.Token.Reveal() != "literal-secret" {
+		t.Fatalf("embedded: %v %#v", err, embedded.Token)
 	}
 }

@@ -1,4 +1,5 @@
 // tests/schema.go
+
 package tests
 
 import "embed"

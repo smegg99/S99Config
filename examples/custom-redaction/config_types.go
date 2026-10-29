@@ -1,4 +1,5 @@
 // examples/custom-redaction/config_types.go
+
 package main
 
 import (

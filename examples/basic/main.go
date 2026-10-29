@@ -1,4 +1,5 @@
 // examples/basic/main.go
+
 package main
 
 // main.go

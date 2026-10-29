@@ -1,4 +1,5 @@
 // references.go
+
 package s99config
 
 import (
@@ -73,10 +74,23 @@ func (r resolver) resolveField(ref reference, path string) (string, bool, error)
 	return resolved, found, nil
 }
 
+// resolveInPlace resolves ref where the value cannot be removed (a list item or a default); a missed private one stays a secret, unset.
+func (r resolver) resolveInPlace(ref reference, path string) (string, error) {
+	resolved, found, err := r.resolveField(ref, path)
+	if err == nil && !found && ref.isPrivate() {
+		r.private.markUnset(path)
+	}
+	return resolved, err
+}
+
 // privateTracker records private paths and values.
 type privateTracker struct {
 	values map[string]string
 	hidden map[string]struct{}
+	// unset paths are private with no value, so their handles report IsSet false.
+	unset map[string]struct{}
+	// missed private fields were removed from the input; one no default fills becomes unset.
+	missed map[string]struct{}
 }
 
 // newPrivateTracker creates empty private tracking state.
@@ -84,6 +98,8 @@ func newPrivateTracker() *privateTracker {
 	return &privateTracker{
 		values: make(map[string]string),
 		hidden: make(map[string]struct{}),
+		unset:  make(map[string]struct{}),
+		missed: make(map[string]struct{}),
 	}
 }
 
@@ -149,7 +165,11 @@ func (r resolver) resolveMap(input map[string]any, prefix string) error {
 			if found {
 				input[key] = resolved
 			} else {
+				// The schema default applies; without one, a private field becomes an unset secret.
 				delete(input, key)
+				if ref.isPrivate() {
+					r.private.missed[path] = struct{}{}
+				}
 			}
 			continue
 		}
@@ -170,8 +190,7 @@ func (r resolver) resolveValue(value any, path string) (any, error) {
 		if !ok {
 			return value, nil
 		}
-		resolved, _, err := r.resolveField(ref, path)
-		return resolved, err
+		return r.resolveInPlace(ref, path)
 	case map[string]any:
 		return value, r.resolveMap(value, path)
 	case []any:
@@ -192,8 +211,30 @@ func (r resolver) resolveValue(value any, path string) (any, error) {
 
 // mark records a private path and value.
 func (p *privateTracker) mark(path, secret string) {
+	if _, unset := p.unset[path]; unset && secret == "" {
+		return
+	}
+	delete(p.unset, path)
 	p.values[path] = secret
 	p.hidden[path] = struct{}{}
+}
+
+// markUnset records a private path whose value was never available.
+func (p *privateTracker) markUnset(path string) {
+	p.values[path] = ""
+	p.hidden[path] = struct{}{}
+	p.unset[path] = struct{}{}
+}
+
+// setValues returns the private values that exist, leaving unset paths out of the secret store.
+func (p *privateTracker) setValues() map[string]string {
+	out := make(map[string]string, len(p.values))
+	for path, value := range p.values {
+		if _, unset := p.unset[path]; !unset {
+			out[path] = value
+		}
+	}
+	return out
 }
 
 // hide records a private path without its value.

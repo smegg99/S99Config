@@ -1,4 +1,5 @@
 // tests/references_test.go
+
 package tests
 
 import (
@@ -228,8 +229,8 @@ func TestMissingOptionalSecretIsNotSet(t *testing.T) {
 	if err := loader.Decode(&got); err != nil {
 		t.Fatal(err)
 	}
-	if got.Token != nil && got.Token.IsSet() {
-		t.Fatalf("token is set to %q after a missing optional reference", got.Token.Reveal())
+	if got.Token == nil || got.Token.IsSet() {
+		t.Fatalf("token = %#v after a missing optional reference, want an unset handle", got.Token)
 	}
 }
 
@@ -271,5 +272,79 @@ func TestStateDirReferences(t *testing.T) {
 		if resolved["db"] != tc.want {
 			t.Fatalf("db = %#v, want %q", resolved["db"], tc.want)
 		}
+	}
+}
+
+// Goptivum's shape: a secret whose schema default is an optional env reference that is unset.
+func TestAMissedOptionalSecretDefaultDecodesUnset(t *testing.T) {
+	type cfg struct {
+		Passphrase s99config.Secret `json:"passphrase"`
+	}
+	for name, file := range map[string]string{
+		"no file value":      `{}`,
+		"written by default": `{"passphrase":"@{env?:S99_MISSING_PASS}"}`,
+	} {
+		loader, err := s99config.New(
+			[]byte(`#Config: {passphrase: string | *"@{env?:S99_MISSING_PASS}"}`),
+			s99config.WithReferences(s99config.ReferenceOptions{}),
+		)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := loader.LoadJSON("config.json", []byte(file)); err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		var got cfg
+		if err := loader.Decode(&got); err != nil {
+			t.Fatalf("%s: Decode: %v", name, err)
+		}
+		if got.Passphrase == nil || got.Passphrase.IsSet() {
+			t.Fatalf("%s: passphrase = %#v, want an unset handle", name, got.Passphrase)
+		}
+		resolved, _ := loader.Map()
+		if _, ok := resolved["passphrase"].(s99config.Secret); !ok {
+			t.Fatalf("%s: Map passphrase = %#v, want a Secret", name, resolved["passphrase"])
+		}
+	}
+}
+
+// A missed optional value over a reference default resolves the default.
+func TestAMissedOptionalValueFallsToAReferenceDefault(t *testing.T) {
+	t.Setenv("S99_DEFAULT_REGION", "eu")
+	loader, err := s99config.New(
+		[]byte(`#Config: {region: string | *"@{pubenv:S99_DEFAULT_REGION}"}`),
+		s99config.WithReferences(s99config.ReferenceOptions{}),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := loader.LoadJSON("config.json", []byte(`{"region":"@{pubenv?:S99_MISSING_REGION}"}`)); err != nil {
+		t.Fatal(err)
+	}
+	resolved, _ := loader.Map()
+	if resolved["region"] != "eu" {
+		t.Fatalf("region = %#v, want the default's value", resolved["region"])
+	}
+}
+
+// A missed optional secret in a list stays a secret, unset.
+func TestAMissedOptionalSecretInAListIsUnset(t *testing.T) {
+	loader, err := s99config.New(
+		[]byte(`#Config: {tokens: [...string]}`),
+		s99config.WithReferences(s99config.ReferenceOptions{}),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := loader.LoadJSON("config.json", []byte(`{"tokens":["@{env?:S99_MISSING_TOKEN}"]}`)); err != nil {
+		t.Fatal(err)
+	}
+	resolved, _ := loader.Map()
+	tokens, _ := resolved["tokens"].([]any)
+	if len(tokens) != 1 {
+		t.Fatalf("tokens = %#v", resolved["tokens"])
+	}
+	if secret, ok := tokens[0].(s99config.Secret); !ok || secret.IsSet() {
+		t.Fatalf("tokens[0] = %#v, want an unset Secret", tokens[0])
 	}
 }

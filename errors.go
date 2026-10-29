@@ -1,4 +1,5 @@
 // errors.go
+
 package s99config
 
 import "errors"

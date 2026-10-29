@@ -1,4 +1,5 @@
 // tests/config_types.go
+
 package tests
 
 import "github.com/smegg99/s99config"

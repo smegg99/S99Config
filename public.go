@@ -1,4 +1,5 @@
 // public.go
+
 package s99config
 
 import "encoding/json"

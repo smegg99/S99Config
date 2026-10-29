@@ -1,4 +1,5 @@
 // decode.go
+
 package s99config
 
 import (
@@ -217,22 +218,38 @@ func indirectTarget(value reflect.Value) reflect.Value {
 	return value
 }
 
-// jsonField finds an exported struct field by JSON name.
+// jsonField finds the field encoding/json would decode name into: an exact match first, then a case-insensitive one.
 func jsonField(value reflect.Value, name string) (reflect.Value, bool) {
+	if field, ok := findField(value, name, false); ok {
+		return field, true
+	}
+	return findField(value, name, true)
+}
+
+// findField matches name against value's fields, promoting the fields of untagged embedded structs.
+func findField(value reflect.Value, name string, fold bool) (reflect.Value, bool) {
 	typ := value.Type()
 	for i := 0; i < typ.NumField(); i++ {
 		field := typ.Field(i)
-		if field.PkgPath != "" {
-			continue
-		}
 		jsonName := strings.Split(field.Tag.Get("json"), ",")[0]
 		if jsonName == "-" {
+			continue
+		}
+		if field.Anonymous && jsonName == "" {
+			if inner := indirectTarget(value.Field(i)); inner.IsValid() && inner.Kind() == reflect.Struct {
+				if found, ok := findField(inner, name, fold); ok {
+					return found, true
+				}
+			}
+			continue
+		}
+		if field.PkgPath != "" {
 			continue
 		}
 		if jsonName == "" {
 			jsonName = field.Name
 		}
-		if jsonName == name {
+		if jsonName == name || (fold && strings.EqualFold(jsonName, name)) {
 			return value.Field(i), true
 		}
 	}

@@ -1,4 +1,5 @@
 // examples/formats/config_types.go
+
 package main
 
 import "github.com/smegg99/s99config"

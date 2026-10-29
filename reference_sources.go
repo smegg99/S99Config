@@ -1,4 +1,5 @@
 // reference_sources.go
+
 package s99config
 
 import (
