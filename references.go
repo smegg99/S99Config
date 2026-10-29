@@ -9,9 +9,7 @@ import (
 	"strings"
 )
 
-// ReferenceOptions controls opt-in @{source:key} resolution. Values returned
-// by a source are treated as literal strings, not additional references.
-// DataDir defaults to ConfigDir and StateDir to DataDir.
+// ReferenceOptions enables @{source:key}; resolved values stay literal, DataDir defaults to ConfigDir and StateDir to DataDir.
 type ReferenceOptions struct {
 	ConfigDir      string
 	DataDir        string

@@ -1,3 +1,4 @@
+// examples/configured-secret/main.go
 package main
 
 import (

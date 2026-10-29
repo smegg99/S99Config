@@ -7,8 +7,7 @@ import (
 	"reflect"
 )
 
-// Patch deep-merges into the current content of the file last loaded by Load
-// and validates before writing it. Existing raw reference expressions are preserved.
+// Patch deep-merges into the loaded file as it is on disk, validates, and keeps raw references.
 func (l *Loader) Patch(patch any) error {
 	patchMap, err := objectFromValue(patch)
 	if err != nil {

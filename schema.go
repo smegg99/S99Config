@@ -13,12 +13,7 @@ import (
 	"cuelang.org/go/cue/load"
 )
 
-// New constructs a Loader from a CUE schema embedded by the application.
-//
-//	//go:embed config.cue
-//	var schema []byte
-//
-//	loader, err := s99config.New(schema)
+// New builds a Loader from an embedded CUE schema.
 func New(schema []byte, opts ...Option) (*Loader, error) {
 	settings, err := configureOptions(opts)
 	if err != nil {
@@ -29,13 +24,7 @@ func New(schema []byte, opts ...Option) (*Loader, error) {
 	return newLoader(ctx, ctx.CompileBytes(schema, cue.Filename("schema.cue")), settings)
 }
 
-// NewFS constructs a Loader from all .cue files in dir of an embedded
-// filesystem. The files are compiled together as one CUE package.
-//
-//	//go:embed schema/*.cue
-//	var schemas embed.FS
-//
-//	loader, err := s99config.NewFS(schemas, "schema")
+// NewFS builds a Loader from every .cue file in dir, compiled as one package.
 func NewFS(schemaFS fs.FS, dir string, opts ...Option) (*Loader, error) {
 	if schemaFS == nil {
 		return nil, errCompileSchemaNilFilesystem

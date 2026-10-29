@@ -16,8 +16,7 @@ func (l *Loader) ConfigPath() string {
 	return l.configPath
 }
 
-// Decode unmarshals the resolved, default-filled configuration into dst.
-// Loaded sensitive fields must accept the configured Secret implementation.
+// Decode unmarshals the resolved config into dst; sensitive fields must accept the configured Secret.
 func (l *Loader) Decode(dst any) error {
 	if dst == nil {
 		return errDecodeDestinationNil
@@ -46,8 +45,7 @@ func (l *Loader) Decode(dst any) error {
 	return nil
 }
 
-// Map returns a copy of the resolved, default-filled configuration, replacing
-// loaded sensitive values with configured Secret implementations.
+// Map returns a copy of the resolved config with sensitive values as Secrets.
 func (l *Loader) Map() (map[string]any, error) {
 	l.mu.RLock()
 	defer l.mu.RUnlock()

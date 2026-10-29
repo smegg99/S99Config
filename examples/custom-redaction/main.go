@@ -1,3 +1,4 @@
+// examples/custom-redaction/main.go
 package main
 
 import (

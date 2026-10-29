@@ -1,3 +1,4 @@
+// tests/load_test.go
 package tests
 
 import (

@@ -13,8 +13,7 @@ type options struct {
 	secretFactory SecretFactory
 }
 
-// WithDefinition selects the CUE definition used for validation.
-// The default is "#Config".
+// WithDefinition selects the CUE definition to validate against, #Config by default.
 func WithDefinition(path string) Option {
 	return func(o *options) error {
 		if strings.TrimSpace(path) == "" {
@@ -34,10 +33,7 @@ func WithReferences(refs ReferenceOptions) Option {
 	}
 }
 
-// WithSecretFactory selects the Secret implementation injected for sensitive
-// loaded values. The factory receives an opaque SecretValue handle. A nil or
-// typed-nil Secret returned by the factory falls back to the default redacted
-// handle.
+// WithSecretFactory sets the Secret built for each sensitive value; a nil result falls back to the redacted handle.
 func WithSecretFactory(factory SecretFactory) Option {
 	return func(o *options) error {
 		if factory == nil {

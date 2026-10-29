@@ -1,3 +1,4 @@
+// tests/secrets_test.go
 package tests
 
 import (
@@ -351,9 +352,7 @@ func TestEscapedPrivateValuesAreRedactedFromValidationErrors(t *testing.T) {
 	}
 }
 
-// TestPublicJSONHidesExplicitlyMarkedDerivedFields checks that a value
-// computed from a secret is hidden when, and only when, it is marked
-// @secret(). Derived values are not detected automatically.
+// A value derived from a secret is hidden only when marked @secret().
 func TestPublicJSONHidesExplicitlyMarkedDerivedFields(t *testing.T) {
 	t.Setenv("S99_TEST_TOKEN", "secret-that-must-not-leak")
 	loader, err := s99config.New(

@@ -12,8 +12,7 @@ import (
 	"github.com/knadh/koanf/v2"
 )
 
-// Load reads configuration based on its .json, .yaml, .yml, or .toml
-// extension. CUE defaults are included in the loaded value.
+// Load reads a .json, .yaml, .yml or .toml file and fills in the CUE defaults.
 func (l *Loader) Load(path string) error {
 	parser, err := parserForPath(path)
 	if err != nil {
@@ -69,8 +68,7 @@ func readConfigFile(path string, parser koanf.Parser) (map[string]any, error) {
 	return raw, nil
 }
 
-// LoadJSON validates JSON from memory. name is reported in errors and
-// provides a location for relative references.
+// LoadJSON validates JSON from memory; name appears in errors and anchors relative references.
 func (l *Loader) LoadJSON(name string, data []byte) error {
 	l.mu.Lock()
 	defer l.mu.Unlock()

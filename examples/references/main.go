@@ -1,3 +1,4 @@
+// examples/references/main.go
 package main
 
 // main.go

@@ -18,12 +18,7 @@ type secretStore struct {
 	values map[string]string
 }
 
-// Secret is the contract for a sensitive configuration value. Implementations
-// choose how the value is represented in output, while Reveal is the explicit
-// operation that provides its plaintext value.
-//
-// New custom implementations should normally embed PresentedSecret, which
-// implements every formatting and logging method in this contract.
+// Secret is a sensitive value that redacts itself in output; Reveal is the explicit plaintext access.
 type Secret interface {
 	Reveal() string
 	IsSet() bool
@@ -35,9 +30,7 @@ type Secret interface {
 	slog.LogValuer
 }
 
-// SecretValue is the default Secret implementation and the value handed to a
-// SecretFactory. It is an opaque, path-bound handle rather than plaintext and
-// represents itself as [redacted].
+// SecretValue is the default Secret: a path-bound handle that prints as [redacted].
 type SecretValue struct {
 	store *secretStore
 	path  string
@@ -60,8 +53,7 @@ func (s SecretValue) IsSet() bool {
 	return ok
 }
 
-// Path returns the encoded configuration path of this value. It can be used by
-// a SecretFactory to choose presentation behavior for different fields.
+// Path returns the value's encoded config path, for a SecretFactory to choose per field.
 func (s SecretValue) Path() string {
 	return s.path
 }
@@ -96,22 +88,16 @@ func (s SecretValue) LogValue() slog.Value {
 	return slog.StringValue(redactedSecret)
 }
 
-// SecretPresenter returns the output representation of a sensitive value.
-// Calling Reveal from a presenter intentionally exposes some or all of that
-// value in formatted or marshaled output.
+// SecretPresenter renders a sensitive value for output; calling Reveal in it exposes the value.
 type SecretPresenter func(SecretValue) string
 
-// PresentedSecret adapts a SecretValue to a custom output representation. It
-// implements Secret for fmt, JSON, text marshaling, and log/slog consistently.
-// Embed it in an application-defined type when distinct config field types are
-// useful.
+// PresentedSecret is a Secret with custom output for fmt, JSON, text and slog; embed it in app types.
 type PresentedSecret struct {
 	SecretValue
 	presenter SecretPresenter
 }
 
-// NewPresentedSecret wraps value with a custom output representation. A nil
-// presenter retains the default [redacted] representation.
+// NewPresentedSecret wraps value with presenter; a nil presenter keeps [redacted].
 func NewPresentedSecret(value SecretValue, presenter SecretPresenter) PresentedSecret {
 	return PresentedSecret{SecretValue: value, presenter: presenter}
 }
@@ -154,8 +140,7 @@ func (s PresentedSecret) LogValue() slog.Value {
 	return slog.StringValue(s.presentation())
 }
 
-// SecretFactory turns an opaque sensitive value into the Secret implementation
-// injected by Decode, Map, and RawMap.
+// SecretFactory turns a sensitive value into the Secret that Decode and Map hand out.
 type SecretFactory func(SecretValue) Secret
 
 // defaultSecretFactory returns the default redacting handle.

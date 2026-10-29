@@ -1,3 +1,4 @@
+// decode.go
 package s99config
 
 import (

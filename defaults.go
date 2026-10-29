@@ -11,9 +11,7 @@ import (
 	"github.com/knadh/koanf/v2"
 )
 
-// DefaultsJSON returns an indented JSON configuration populated entirely from
-// schema defaults. It returns an error if required fields do not have defaults.
-// Sensitive defaults are materialized verbatim; treat the result as private.
+// DefaultsJSON returns indented JSON built from schema defaults, secrets included; treat it as private.
 func (l *Loader) DefaultsJSON() ([]byte, error) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -35,9 +33,7 @@ func (l *Loader) DefaultsJSON() ([]byte, error) {
 	return append(formatted, '\n'), nil
 }
 
-// WriteDefaults writes a default-filled configuration based on the path
-// extension. The schema must provide defaults for every required value. New
-// configuration files are created with owner-only permissions.
+// WriteDefaults writes schema defaults in the format of path's extension, as an owner-only file.
 func (l *Loader) WriteDefaults(path string) error {
 	parser, err := parserForPath(path)
 	if err != nil {

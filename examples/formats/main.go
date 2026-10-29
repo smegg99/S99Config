@@ -1,3 +1,4 @@
+// examples/formats/main.go
 package main
 
 // main.go
