@@ -65,3 +65,20 @@ func TestLoadOrCreate(t *testing.T) {
 		t.Fatalf("file was rewritten: %s %v", content, err)
 	}
 }
+
+// A relative XDG_CONFIG_HOME is ignored like the other XDG variables, not a failure.
+func TestUserDirsIgnoreARelativeConfigHome(t *testing.T) {
+	if runtime.GOOS == "windows" || runtime.GOOS == "darwin" {
+		t.Skip("XDG layout only")
+	}
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("XDG_CONFIG_HOME", "relative/config")
+	dirs, err := s99config.UserDirs("demo")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := filepath.Join(home, ".config", "demo"); dirs.Config != want {
+		t.Fatalf("Config = %q, want %q", dirs.Config, want)
+	}
+}

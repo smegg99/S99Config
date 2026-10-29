@@ -162,7 +162,8 @@ if err := loader.LoadOrCreate(filepath.Join(dirs.Config, "config.json")); err !=
 ## References
 
 References are resolved only when `WithReferences` is enabled. Without it, a
-config value shaped like a reference is a load error.
+value in the config file shaped like a reference is a load error; schema
+defaults are taken as written.
 
 | Reference | Reads from | Public JSON |
 | --- | --- | --- |
@@ -179,9 +180,11 @@ Add `?` after the source to allow missing values:
 region: "@{pubenv?:APP_REGION}"
 ```
 
-A missing optional value leaves the field unset, so the schema default applies.
-A required field without a default then fails validation, and a secret field
-gives a handle whose `IsSet` is false. Inside a list the item becomes `""`.
+A missing optional value leaves the field unset, so the schema default applies,
+including a default that is itself a reference. A required field without a
+default then fails validation. A missing `env` or `keyring` value, whether in
+the file, in a default or in a list, decodes to a `Secret` whose `IsSet` is
+false; any other missing value inside a list becomes `""`.
 
 Resolved values are treated as literal strings. If `APP_REGION` contains
 `@{env:OTHER}`, it stays that exact text.
@@ -212,6 +215,9 @@ Use `@secret()` for literal config values that must also be protected:
 }
 ```
 
+`@secret()` also works under pattern fields (`[string]: {token: string
+@secret()}`) and on a list of strings, which protects every item.
+
 `Decode` refuses to put a protected value into a plain `string` field, and
 returns an error when the struct has no field for one. For
 dynamic use, `Map` and `Decode(&map[string]any{})` return secret
@@ -234,9 +240,15 @@ public, err := loader.PublicJSON()
 ```
 
 `WriteDefaults` requires defaults for all required fields and creates new files
-with `0600` permissions. `Patch` validates before writing, preserves raw
-reference expressions, and rewrites the file in its original format. Comments
-and hand formatting are not preserved.
+with `0600` permissions, in `0700` directories. `Patch` merges into the file as
+it is on disk, so edits made after `Load` survive, and writes it again from what
+was loaded if it was deleted. It validates before writing, preserves raw
+reference expressions, and rewrites the file in its original format; JSON is
+indented. Comments and hand formatting are not preserved.
+
+Every write goes through a temporary file that is synced and renamed over the
+old one, and the directory is synced too. A symlinked config file stays a
+link: the write goes to the file it points at.
 
 ## Examples
 

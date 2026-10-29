@@ -15,23 +15,29 @@ type Dirs struct {
 	State  string
 }
 
-// UserDirs returns the directories for app: XDG on Linux and BSD, Local AppData on Windows, Application Support on macOS.
+// UserDirs returns app's directories: XDG on Linux and BSD, Roaming and Local AppData on Windows, Application Support on macOS.
 func UserDirs(app string) (Dirs, error) {
-	base, err := os.UserConfigDir()
-	if err != nil {
-		return Dirs{}, err
-	}
-	config := filepath.Join(base, app)
 	switch runtime.GOOS {
-	case "windows":
+	case "windows", "darwin", "ios":
+		base, err := os.UserConfigDir()
+		if err != nil {
+			return Dirs{}, err
+		}
+		config := filepath.Join(base, app)
+		if runtime.GOOS != "windows" {
+			return Dirs{Config: config, Data: config, State: config}, nil
+		}
 		data := config
 		if local := os.Getenv("LOCALAPPDATA"); filepath.IsAbs(local) {
 			data = filepath.Join(local, app)
 		}
 		return Dirs{Config: config, Data: data, State: data}, nil
-	case "darwin", "ios":
-		return Dirs{Config: config, Data: config, State: config}, nil
 	}
+	base, err := xdgDir("XDG_CONFIG_HOME", ".config")
+	if err != nil {
+		return Dirs{}, err
+	}
+	config := filepath.Join(base, app)
 	data, err := xdgDir("XDG_DATA_HOME", ".local", "share")
 	if err != nil {
 		return Dirs{}, err

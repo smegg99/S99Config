@@ -85,6 +85,32 @@ func maskSecretMap(input map[string]any, private *privateTracker) map[string]any
 	return output
 }
 
+// revealSecretMap copies input with secret handles turned back into plaintext.
+func revealSecretMap(input map[string]any) map[string]any {
+	output := make(map[string]any, len(input))
+	for key, value := range input {
+		output[key] = revealSecretValue(value)
+	}
+	return output
+}
+
+func revealSecretValue(value any) any {
+	switch value := value.(type) {
+	case Secret:
+		return value.Reveal()
+	case map[string]any:
+		return revealSecretMap(value)
+	case []any:
+		output := make([]any, len(value))
+		for i, item := range value {
+			output[i] = revealSecretValue(item)
+		}
+		return output
+	default:
+		return value
+	}
+}
+
 // maskSecretValue masks one secret for JSON decoding.
 func maskSecretValue(value any, path string, private *privateTracker) any {
 	if _, ok := private.value(path); ok {

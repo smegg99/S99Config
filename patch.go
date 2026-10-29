@@ -4,7 +4,9 @@ package s99config
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
 	"reflect"
 )
 
@@ -22,6 +24,10 @@ func (l *Loader) Patch(patch any) error {
 	}
 
 	raw, err := readConfigFile(l.configPath, l.parser)
+	if errors.Is(err, fs.ErrNotExist) {
+		// A file deleted since Load is written again from what was loaded.
+		raw, err = revealSecretMap(l.raw), nil
+	}
 	if err != nil {
 		return fmt.Errorf("patch config: %w", err)
 	}

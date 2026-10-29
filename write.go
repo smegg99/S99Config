@@ -4,12 +4,14 @@ package s99config
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
+	"syscall"
 
 	"github.com/knadh/koanf/v2"
 )
@@ -92,9 +94,7 @@ func nativeNumberValue(value any) (any, error) {
 
 // writeBytesAtomic replaces a file through a synced temp file, writing through a symlink to its target.
 func writeBytesAtomic(path string, data []byte, defaultMode os.FileMode) error {
-	if resolved, err := filepath.EvalSymlinks(path); err == nil {
-		path = resolved
-	}
+	path = linkTarget(path)
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return fmt.Errorf("create directory %s: %w", dir, err)
@@ -133,6 +133,25 @@ func writeBytesAtomic(path string, data []byte, defaultMode os.FileMode) error {
 	return syncDir(dir)
 }
 
+// linkTarget follows path's symlinks to the file they name, existing or not, so writing keeps the links.
+func linkTarget(path string) string {
+	if resolved, err := filepath.EvalSymlinks(path); err == nil {
+		return resolved
+	}
+	// EvalSymlinks fails on a dangling link; follow it by hand, bounded like the kernel's 40 hops.
+	for range 40 {
+		target, err := os.Readlink(path)
+		if err != nil {
+			return path
+		}
+		if !filepath.IsAbs(target) {
+			target = filepath.Join(filepath.Dir(path), target)
+		}
+		path = target
+	}
+	return path
+}
+
 // syncDir makes a rename inside dir durable; Windows cannot sync a directory handle.
 func syncDir(dir string) error {
 	if runtime.GOOS == "windows" {
@@ -143,7 +162,8 @@ func syncDir(dir string) error {
 		return fmt.Errorf("open directory %s: %w", dir, err)
 	}
 	defer handle.Close()
-	if err := handle.Sync(); err != nil {
+	// Some network and FUSE filesystems cannot sync a directory; the rename already happened.
+	if err := handle.Sync(); err != nil && !errors.Is(err, syscall.EINVAL) {
 		return fmt.Errorf("sync directory %s: %w", dir, err)
 	}
 	return nil

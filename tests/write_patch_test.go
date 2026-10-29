@@ -360,3 +360,49 @@ func TestPatchKeepsEditsMadeAfterLoad(t *testing.T) {
 		t.Fatalf("patched file lost an edit or the patch:\n%s", content)
 	}
 }
+
+// A link whose target does not exist yet is followed, so the first write creates the target and keeps the link.
+func TestWriteDefaultsFollowsADanglingSymlink(t *testing.T) {
+	loader, err := s99config.New([]byte(`#Config: {name: string | *"generated"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	link := filepath.Join(dir, "config.json")
+	if err := os.Symlink(filepath.Join("real", "config.json"), link); err != nil {
+		t.Fatal(err)
+	}
+	if err := loader.LoadOrCreate(link); err != nil {
+		t.Fatal(err)
+	}
+	if info, err := os.Lstat(link); err != nil || info.Mode()&os.ModeSymlink == 0 {
+		t.Fatalf("the link was replaced: %v", err)
+	}
+	if content, err := os.ReadFile(filepath.Join(dir, "real", "config.json")); err != nil || !strings.Contains(string(content), "generated") {
+		t.Fatalf("target = %s, %v", content, err)
+	}
+}
+
+// A file deleted after Load is written again from the patch, as before Patch read the disk.
+func TestPatchRecreatesADeletedFile(t *testing.T) {
+	loader, err := s99config.New([]byte(`#Config: {name: string | *"app", port: int | *8080}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(t.TempDir(), "config.json")
+	if err := os.WriteFile(path, []byte(`{"name":"app"}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := loader.Load(path); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(path); err != nil {
+		t.Fatal(err)
+	}
+	if err := loader.Patch(map[string]any{"port": 9090}); err != nil {
+		t.Fatal(err)
+	}
+	if content, err := os.ReadFile(path); err != nil || !strings.Contains(string(content), "9090") {
+		t.Fatalf("patched file = %s, %v", content, err)
+	}
+}
